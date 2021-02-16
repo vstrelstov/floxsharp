@@ -19,7 +19,7 @@ let runFile (filePath: string) =
     use reader = new StreamReader(filePath)
     let result = run (reader.ReadToEnd()) 
     match result.HasError with
-    | true -> failwith "Aborted due to occured error"
+    | true -> failwith "An error occured. Execution aborted."
     | false -> ()
 
 let rec runPrompt () =
