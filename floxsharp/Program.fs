@@ -47,6 +47,14 @@ type TokenType =
     | While
     | EOF
 
+type Token =
+    {
+        Type: TokenType;
+        Lexeme: string;
+        Line: int;
+        // TODO: Add Literal: Object
+    } // TODO: Implement Tostring() function
+
 let scanTokens (source: string) =
     List.empty<string>
 
