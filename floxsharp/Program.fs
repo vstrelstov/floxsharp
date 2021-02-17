@@ -1,11 +1,6 @@
 ﻿open System
 open System.IO
 
-type RunState = 
-    {
-        HasError: bool;
-    }
-
 type TokenType = 
     | LeftParen
     | RightParen
@@ -55,21 +50,48 @@ type Token =
         // TODO: Add Literal: Object
     } // TODO: Implement Tostring() function
 
+exception InterpreterException of int * string * string
+
+let report line where message =
+    Console.WriteLine($"[line {line}] Error: {where}: {message}")
+
 let scanTokens (source: string) =
-    List.empty<string>
+    let addToken tokenType lexeme = 
+        { Type = tokenType; Lexeme = lexeme; Line = 0 } // TODO: Find how to set line number
+    let addToken tokenType = addToken tokenType String.Empty
+    
+    let scanToken currentChar =
+        match currentChar with
+        | '(' -> addToken TokenType.LeftParen
+        | ')' -> addToken TokenType.RightParen
+        | '{' -> addToken TokenType.LeftBrace
+        | '}' -> addToken TokenType.RightBrace
+        | ',' -> addToken TokenType.Comma
+        | '.' -> addToken TokenType.Dot
+        | '-' -> addToken TokenType.Minus
+        | '+' -> addToken TokenType.Plus
+        | ';' -> addToken TokenType.Semicolon
+        | '*' -> addToken TokenType.Star
+        | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) // TODO: Find how to set line number
+        
+    source
+    |> Seq.toList
+    |> List.map(fun i -> scanToken i)
 
 let run (source: string) =
     scanTokens source
     |> List.map (fun s -> Console.WriteLine(s))
     |> ignore
-    { HasError = false; }
 
 let runFile (filePath: string) =
-    use reader = new StreamReader(filePath)
-    let result = run (reader.ReadToEnd()) 
-    match result.HasError with
-    | true -> failwith "An error occured. Execution aborted."
-    | false -> ()
+    try
+        use reader = new StreamReader(filePath)
+        let result = run (reader.ReadToEnd())
+        ()
+    with
+    | InterpreterException (line, where, message) -> report line where message
+    
+    ()
 
 let rec runPrompt () =
     printf "%s" ">> "
@@ -77,20 +99,17 @@ let rec runPrompt () =
     match String.IsNullOrWhiteSpace(line) with
     | true -> ()
     | false -> 
-        run line |> ignore
+        try
+            run line |> ignore
+        with
+        | InterpreterException (line, where, message) -> report line where message
         runPrompt ()
-
-let error line message = 
-    let report line where message =
-        Console.WriteLine($"[line {line}] Error: {where}: {message}")
-        { HasError = true; }
-    report line String.Empty message
 
 [<EntryPoint>]
 let main argv =
     match argv.Length with
     | 0 -> runPrompt ()
     | 1 -> runFile argv.[0]
-    | _ -> failwith "Too many parameters. Usage: floxsharp [script_path]"
+    | _ -> printfn "%s" "Too many parameters. Usage: floxsharp [script_path]"
 
     0
