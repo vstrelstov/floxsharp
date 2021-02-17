@@ -72,7 +72,8 @@ let scanTokens (source: string) =
         | '+' -> addToken TokenType.Plus
         | ';' -> addToken TokenType.Semicolon
         | '*' -> addToken TokenType.Star
-        | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) // TODO: Find how to set line number
+        | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) 
+        // TODO: Find how to set line number
         
     source
     |> Seq.toList
@@ -110,6 +111,7 @@ let main argv =
     match argv.Length with
     | 0 -> runPrompt ()
     | 1 -> runFile argv.[0]
-    | _ -> printfn "%s" "Too many parameters. Usage: floxsharp [script_path]"
+    | _ ->
+        printfn "%s" "Too many parameters. Usage: floxsharp [script_path] | floxsharp (to run in REPL mode)"
 
     0
