@@ -92,7 +92,7 @@ let runFile (filePath: string) =
         use reader = new StreamReader(filePath)
         reader.ReadToEnd()
         |> (fun s -> s.Split [|'\n'|])
-        |> Array.iter (fun source -> run source) // TODO: Consider using Array.iteri in order to pass line number
+        |> Array.iteri (fun index source -> run source)
     with
     | InterpreterException (line, where, message) -> report line where message
     
