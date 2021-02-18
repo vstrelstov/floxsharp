@@ -53,7 +53,7 @@ type Token =
 exception InterpreterException of int * string * string
 
 let report line where message =
-    Console.WriteLine($"[line {line}] Error: {where}: {message}")
+    Console.WriteLine($"[line {line}] Error: {message}")
 
 let rec scanTokens (source: string) =
     let addToken tokenType lexeme = 
