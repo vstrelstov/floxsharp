@@ -48,7 +48,7 @@ type Token =
         Lexeme: string;
         Line: int;
         // TODO: Add Literal: Object
-    } // TODO: Implement Tostring() function if needed
+    }
 
 exception InterpreterException of int * string * string
 
@@ -56,24 +56,41 @@ let report line where message =
     Console.WriteLine($"[line {line}] Error: {message}")
 
 let rec scanTokens (source: string) =
-    let mutable lineNumber = 1
+    let mutable lineNumber = 1 // TODO: Consider passing lineNumber as parameter
 
-    let addToken tokenType lexeme = 
+    let createToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
-    let addToken tokenType = addToken tokenType String.Empty
+    let createToken tokenType = createToken tokenType String.Empty
 
     let rec loop source tokens = 
+        let matchNext expected = 
+            match source with
+            | [] -> false
+            | head::tail -> 
+                match tail with 
+                | [] -> false
+                | head::tail -> head = expected
+
+        let getCompareOrEqualToken trueTokenType falseTokenType = 
+            match (matchNext '=') with
+            | true -> createToken trueTokenType
+            | false -> createToken falseTokenType
+
         let scanToken = function
-            | '(' -> addToken TokenType.LeftParen
-            | ')' -> addToken TokenType.RightParen
-            | '{' -> addToken TokenType.LeftBrace
-            | '}' -> addToken TokenType.RightBrace
-            | ',' -> addToken TokenType.Comma
-            | '.' -> addToken TokenType.Dot
-            | '-' -> addToken TokenType.Minus
-            | '+' -> addToken TokenType.Plus
-            | ';' -> addToken TokenType.Semicolon
-            | '*' -> addToken TokenType.Star 
+            | '(' -> createToken TokenType.LeftParen
+            | ')' -> createToken TokenType.RightParen
+            | '{' -> createToken TokenType.LeftBrace
+            | '}' -> createToken TokenType.RightBrace
+            | ',' -> createToken TokenType.Comma
+            | '.' -> createToken TokenType.Dot
+            | '-' -> createToken TokenType.Minus
+            | '+' -> createToken TokenType.Plus
+            | ';' -> createToken TokenType.Semicolon
+            | '*' -> createToken TokenType.Star
+            | '!' -> getCompareOrEqualToken TokenType.BangEqual TokenType.Bang
+            | '=' -> getCompareOrEqualToken TokenType.EqualEqual TokenType.Equal
+            | '<' -> getCompareOrEqualToken TokenType.LessEqual TokenType.Less
+            | '>' -> getCompareOrEqualToken TokenType.GreaterEqual TokenType.Greater
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character")) 
             
         match source with
@@ -83,7 +100,11 @@ let rec scanTokens (source: string) =
             | '\n' -> 
                 lineNumber <- (lineNumber + 1)
                 loop tail tokens
-            | _ -> loop tail (tokens @ [scanToken head])
+            | _ -> 
+                let newToken = scanToken head
+                match newToken.Type with
+                | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual | TokenType.BangEqual -> loop (List.tail tail) (tokens @ [newToken]) // WARN: may fail if tail is empty
+                | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList |> List.filter (fun c -> c <> ' ' && c <> '\r' && c <> '\t')) []
 
@@ -117,7 +138,7 @@ let rec runPrompt () =
 let main argv =
     match argv.Length with
     | 0 -> 
-        printfn "%s" "You are entering REPL mode. Press Ctrl+C to exit."
+        printfn "%s" "You are entering REPL mode. Press Ctrl+Enter to exit."
         runPrompt ()
     | 1 -> runFile argv.[0]
     | _ ->
