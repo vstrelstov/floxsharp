@@ -55,9 +55,7 @@ exception InterpreterException of int * string * string
 let report line where message =
     Console.WriteLine($"[line {line}] Error: {message}")
 
-let rec scanTokens (source: string) =
-    let mutable lineNumber = 1 // TODO: Consider passing lineNumber as parameter
-
+let rec scanTokens lineNumber (source: string) =
     let createToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
@@ -91,32 +89,32 @@ let rec scanTokens (source: string) =
             | '=' -> getCompareOrEqualToken TokenType.EqualEqual TokenType.Equal
             | '<' -> getCompareOrEqualToken TokenType.LessEqual TokenType.Less
             | '>' -> getCompareOrEqualToken TokenType.GreaterEqual TokenType.Greater
-            | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character")) 
+            | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
             
         match source with
         | [] -> tokens
         | head::tail -> 
             match head with
-            | '\n' -> 
-                lineNumber <- (lineNumber + 1)
-                loop tail tokens
+            | '\n' -> loop tail tokens
             | _ -> 
                 let newToken = scanToken head
                 match newToken.Type with
                 | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual | TokenType.BangEqual -> loop (List.tail tail) (tokens @ [newToken]) // WARN: may fail if tail is empty
                 | _ -> loop tail (tokens @ [newToken])
-
+    // TODO: Ignore these symbols rather than remove them
     loop (source |> Seq.toList |> List.filter (fun c -> c <> ' ' && c <> '\r' && c <> '\t')) []
 
-let run (source: string) =
-    scanTokens source
+let run lineNumber (source: string) =
+    scanTokens lineNumber source
     |> List.map (fun s -> Console.WriteLine(s.ToString()))
     |> ignore
 
 let runFile (filePath: string) =
     try
         use reader = new StreamReader(filePath)
-        reader.ReadToEnd() |> run
+        reader.ReadToEnd() 
+        |> (fun source -> source.Split [|'\n'|])
+        |> Array.iteri (fun index line -> run (index + 1) line)
     with
     | InterpreterException (line, where, message) -> report line where message
     
@@ -129,7 +127,7 @@ let rec runPrompt () =
     | true -> ()
     | false -> 
         try
-            run line |> ignore
+            run 1 line |> ignore
         with
         | InterpreterException (line, where, message) -> report line where message
         runPrompt ()
