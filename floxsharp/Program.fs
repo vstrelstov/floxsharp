@@ -48,7 +48,7 @@ type Token =
         Lexeme: string;
         Line: int;
         // TODO: Add Literal: Object
-    } // TODO: Implement Tostring() function
+    } // TODO: Implement Tostring() function if needed
 
 exception InterpreterException of int * string * string
 
@@ -60,7 +60,7 @@ let scanTokens (source: string) =
         { Type = tokenType; Lexeme = lexeme; Line = 0 } // TODO: Find how to set line number
     let addToken tokenType = addToken tokenType String.Empty
     
-    let scanToken currentChar =
+    let scanToken index currentChar =
         match currentChar with
         | '(' -> addToken TokenType.LeftParen
         | ')' -> addToken TokenType.RightParen
@@ -77,7 +77,7 @@ let scanTokens (source: string) =
         
     source
     |> Seq.toList
-    |> List.map(fun i -> scanToken i)
+    |> List.mapi (fun index currentChar -> scanToken index currentChar)
 
 let run (source: string) =
     scanTokens source
@@ -87,8 +87,9 @@ let run (source: string) =
 let runFile (filePath: string) =
     try
         use reader = new StreamReader(filePath)
-        let result = run (reader.ReadToEnd())
-        ()
+        reader.ReadToEnd()
+        |> (fun s -> s.Split [|'\n'|])
+        |> Array.iter (fun source -> run source) // TODO: Consider using Array.iteri in order to pass line number
     with
     | InterpreterException (line, where, message) -> report line where message
     
