@@ -56,13 +56,14 @@ let report line where message =
     Console.WriteLine($"[line {line}] Error: {message}")
 
 let rec scanTokens (source: string) =
+    let mutable lineNumber = 1
+
     let addToken tokenType lexeme = 
-        { Type = tokenType; Lexeme = lexeme; Line = 0 } // TODO: Find how to set line number
+        { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let addToken tokenType = addToken tokenType String.Empty
 
     let rec loop source tokens = 
-        let scanToken currentChar =
-            match currentChar with
+        let scanToken = function
             | '(' -> addToken TokenType.LeftParen
             | ')' -> addToken TokenType.RightParen
             | '{' -> addToken TokenType.LeftBrace
@@ -73,14 +74,18 @@ let rec scanTokens (source: string) =
             | '+' -> addToken TokenType.Plus
             | ';' -> addToken TokenType.Semicolon
             | '*' -> addToken TokenType.Star 
-            | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) 
-            // TODO: Find how to set line number
+            | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character")) 
             
         match source with
         | [] -> tokens
-        | head::tail -> loop tail (tokens @ [scanToken head])
+        | head::tail -> 
+            match head with
+            | '\n' -> 
+                lineNumber <- (lineNumber + 1)
+                loop tail tokens
+            | _ -> loop tail (tokens @ [scanToken head])
 
-    loop (source |> Seq.toList) []
+    loop (source |> Seq.toList |> List.filter (fun c -> c <> ' ' && c <> '\r' && c <> '\t')) []
 
 let run (source: string) =
     scanTokens source
@@ -90,9 +95,7 @@ let run (source: string) =
 let runFile (filePath: string) =
     try
         use reader = new StreamReader(filePath)
-        reader.ReadToEnd()
-        |> (fun s -> s.Split [|'\n'|])
-        |> Array.iteri (fun index source -> run source)
+        reader.ReadToEnd() |> run
     with
     | InterpreterException (line, where, message) -> report line where message
     
