@@ -55,33 +55,36 @@ exception InterpreterException of int * string * string
 let report line where message =
     Console.WriteLine($"[line {line}] Error: {where}: {message}")
 
-let scanTokens (source: string) =
+let rec scanTokens (source: string) =
     let addToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = 0 } // TODO: Find how to set line number
     let addToken tokenType = addToken tokenType String.Empty
-    
-    let scanToken index currentChar =
-        match currentChar with
-        | '(' -> addToken TokenType.LeftParen
-        | ')' -> addToken TokenType.RightParen
-        | '{' -> addToken TokenType.LeftBrace
-        | '}' -> addToken TokenType.RightBrace
-        | ',' -> addToken TokenType.Comma
-        | '.' -> addToken TokenType.Dot
-        | '-' -> addToken TokenType.Minus
-        | '+' -> addToken TokenType.Plus
-        | ';' -> addToken TokenType.Semicolon
-        | '*' -> addToken TokenType.Star
-        | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) 
-        // TODO: Find how to set line number
-        
-    source
-    |> Seq.toList
-    |> List.mapi (fun index currentChar -> scanToken index currentChar)
+
+    let rec loop source tokens = 
+        let scanToken currentChar =
+            match currentChar with
+            | '(' -> addToken TokenType.LeftParen
+            | ')' -> addToken TokenType.RightParen
+            | '{' -> addToken TokenType.LeftBrace
+            | '}' -> addToken TokenType.RightBrace
+            | ',' -> addToken TokenType.Comma
+            | '.' -> addToken TokenType.Dot
+            | '-' -> addToken TokenType.Minus
+            | '+' -> addToken TokenType.Plus
+            | ';' -> addToken TokenType.Semicolon
+            | '*' -> addToken TokenType.Star 
+            | _ -> raise (InterpreterException (0, String.Empty, "Unexpected character")) 
+            // TODO: Find how to set line number
+            
+        match source with
+        | [] -> tokens
+        | head::tail -> loop tail (tokens @ [scanToken head])
+
+    loop (source |> Seq.toList) []
 
 let run (source: string) =
     scanTokens source
-    |> List.map (fun s -> Console.WriteLine(s))
+    |> List.map (fun s -> Console.WriteLine(s.ToString()))
     |> ignore
 
 let runFile (filePath: string) =
@@ -110,7 +113,9 @@ let rec runPrompt () =
 [<EntryPoint>]
 let main argv =
     match argv.Length with
-    | 0 -> runPrompt ()
+    | 0 -> 
+        printfn "%s" "You are entering REPL mode. Press Ctrl+C to exit."
+        runPrompt ()
     | 1 -> runFile argv.[0]
     | _ ->
         printfn "%s" "Too many parameters. Usage: floxsharp [script_path] | floxsharp (to run in REPL mode)"
