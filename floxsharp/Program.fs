@@ -77,13 +77,13 @@ let rec scanTokens (source: string) =
         let matchNext expected = peekNextSymbol = (Some expected)
 
         let createTokenByCondition symbolToMatch matchTokenType mismatchTokenType =
-            match matchNext symbolToMatch with
-            | true -> createToken matchTokenType
-            | false -> createToken mismatchTokenType
+            if matchNext symbolToMatch then
+                createToken matchTokenType
+            else createToken mismatchTokenType
 
         let rec createStringToken = 
-            
-            {Type = TokenType.String; Lexeme = String.Empty; Line = 0;} // Stub
+            // This function is a stub
+            {Type = TokenType.String; Lexeme = String.Empty; Line = 0;}
 
         let scanToken = function
             | '(' -> createToken TokenType.LeftParen
@@ -103,6 +103,7 @@ let rec scanTokens (source: string) =
             | '>' -> createTokenByCondition '=' TokenType.GreaterEqual TokenType.Greater
             | '"' -> createStringToken
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+
         // TODO: set lineNubmer
         match source with // TODO: Requires refactoring
         | [] -> tokens
@@ -111,9 +112,10 @@ let rec scanTokens (source: string) =
             | true -> loop tail tokens
             | false -> 
                 let newToken = scanToken head
-                match Array.contains newToken.Type skipNextSymbol with
-                | true -> loop (tryTail tail) (tokens @ [newToken])
-                | _ -> loop tail (tokens @ [newToken])
+                if Array.contains newToken.Type skipNextSymbol then
+                    loop (tryTail tail) (tokens @ [newToken])
+                else
+                    loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
 
@@ -134,9 +136,8 @@ let runFile (filePath: string) =
 let rec runPrompt () =
     printf "%s" ">> "
     let line = Console.ReadLine()
-    match String.IsNullOrWhiteSpace(line) with
-    | true -> ()
-    | false -> 
+    if String.IsNullOrWhiteSpace(line) then ()
+    else
         try
             run line |> ignore
         with
