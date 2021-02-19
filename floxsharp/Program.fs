@@ -68,8 +68,10 @@ let rec scanTokens (source: string) =
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
 
+    // TODO: "///" is lexed like "Comment Slash:, whic is incorrect
+    // TODO: Perhaps it could be solved by adding skipWhile funciton
     let ignoredSymbols = [|' '; '\r'; '\t'|]
-    let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
+    let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual; TokenType.Comment|] // TODO: Consider renaming
 
     let rec loop source tokens =
         let peekNextSymbol = List.tryHead (tryTail source)
