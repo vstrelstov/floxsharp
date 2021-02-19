@@ -78,8 +78,8 @@ let rec scanTokens (source: string) =
 
         let matchNext expected = peekNextSymbol = (Some expected)
 
-        let createTokenByNextExpected symbolToMatch matchTokenType mismatchTokenType =
-            if matchNext symbolToMatch then
+        let createTokenByNextExpected expectedSymbol matchTokenType mismatchTokenType =
+            if matchNext expectedSymbol then
                 createToken matchTokenType
             else createToken mismatchTokenType
 
