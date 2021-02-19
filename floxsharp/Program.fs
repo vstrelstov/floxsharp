@@ -78,7 +78,7 @@ let rec scanTokens (source: string) =
 
         let matchNext expected = peekNextSymbol = (Some expected)
 
-        let createTokenByCondition symbolToMatch matchTokenType mismatchTokenType =
+        let createTokenByNextExpected symbolToMatch matchTokenType mismatchTokenType =
             if matchNext symbolToMatch then
                 createToken matchTokenType
             else createToken mismatchTokenType
@@ -98,11 +98,11 @@ let rec scanTokens (source: string) =
             | '+' -> createToken TokenType.Plus
             | ';' -> createToken TokenType.Semicolon
             | '*' -> createToken TokenType.Star
-            | '/' -> createTokenByCondition '/' TokenType.Comment TokenType.Slash
-            | '!' -> createTokenByCondition '=' TokenType.BangEqual TokenType.Bang
-            | '=' -> createTokenByCondition '=' TokenType.EqualEqual TokenType.Equal
-            | '<' -> createTokenByCondition '=' TokenType.LessEqual TokenType.Less
-            | '>' -> createTokenByCondition '=' TokenType.GreaterEqual TokenType.Greater
+            | '/' -> createTokenByNextExpected '/' TokenType.Comment TokenType.Slash
+            | '!' -> createTokenByNextExpected '=' TokenType.BangEqual TokenType.Bang
+            | '=' -> createTokenByNextExpected '=' TokenType.EqualEqual TokenType.Equal
+            | '<' -> createTokenByNextExpected '=' TokenType.LessEqual TokenType.Less
+            | '>' -> createTokenByNextExpected '=' TokenType.GreaterEqual TokenType.Greater
             | '"' -> createStringToken
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
