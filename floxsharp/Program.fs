@@ -21,6 +21,7 @@ type TokenType =
     | GreaterEqual
     | Less
     | LessEqual
+    | Comment
     | Identifier
     | String
     | Number
@@ -61,6 +62,7 @@ let rec scanTokens lineNumber (source: string) =
     let createToken tokenType = createToken tokenType String.Empty
 
     let rec loop source tokens = 
+    // TODO: implement getNextSymbol function
         let matchNext expected = 
             match source with
             | [] -> false
@@ -69,8 +71,8 @@ let rec scanTokens lineNumber (source: string) =
                 | [] -> false
                 | head::tail -> head = expected
 
-        let getCompareOrEqualToken trueTokenType falseTokenType = 
-            match (matchNext '=') with
+        let createTokenByCondition symbolToMatch trueTokenType falseTokenType =
+            match (matchNext symbolToMatch) with
             | true -> createToken trueTokenType
             | false -> createToken falseTokenType
 
@@ -85,24 +87,28 @@ let rec scanTokens lineNumber (source: string) =
             | '+' -> createToken TokenType.Plus
             | ';' -> createToken TokenType.Semicolon
             | '*' -> createToken TokenType.Star
-            | '!' -> getCompareOrEqualToken TokenType.BangEqual TokenType.Bang
-            | '=' -> getCompareOrEqualToken TokenType.EqualEqual TokenType.Equal
-            | '<' -> getCompareOrEqualToken TokenType.LessEqual TokenType.Less
-            | '>' -> getCompareOrEqualToken TokenType.GreaterEqual TokenType.Greater
+            | '/' -> createTokenByCondition '/' TokenType.Comment TokenType.Slash
+            | '!' -> createTokenByCondition '=' TokenType.BangEqual TokenType.Bang
+            | '=' -> createTokenByCondition '=' TokenType.EqualEqual TokenType.Equal
+            | '<' -> createTokenByCondition '=' TokenType.LessEqual TokenType.Less
+            | '>' -> createTokenByCondition '=' TokenType.GreaterEqual TokenType.Greater
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
-            
+          
+        let ignoredSymbols = [|' '; '\r'; '\t'|]
+        let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
+
         match source with
         | [] -> tokens
         | head::tail -> 
-            match head with
-            | '\n' -> loop tail tokens
-            | _ -> 
+            match Array.contains head ignoredSymbols with
+            | true -> loop tail tokens
+            | false -> 
                 let newToken = scanToken head
-                match newToken.Type with
-                | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual | TokenType.BangEqual -> loop (List.tail tail) (tokens @ [newToken]) // WARN: may fail if tail is empty
+                match Array.contains newToken.Type skipNextSymbol with
+                | true -> loop (List.tail tail) (tokens @ [newToken]) // WARN: may fail if tail is empty
                 | _ -> loop tail (tokens @ [newToken])
-    // TODO: Ignore these symbols rather than remove them
-    loop (source |> Seq.toList |> List.filter (fun c -> c <> ' ' && c <> '\r' && c <> '\t')) []
+
+    loop (source |> Seq.toList) []
 
 let run lineNumber (source: string) =
     scanTokens lineNumber source
