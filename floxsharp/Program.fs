@@ -56,7 +56,14 @@ exception InterpreterException of int * string * string
 let report line where message =
     Console.WriteLine($"[line {line}] Error: {message}")
 
-let rec scanTokens lineNumber (source: string) =
+let tryTail list =
+    match list with
+    | [] -> list
+    | head::tail -> tail
+
+let rec scanTokens (source: string) =
+    let mutable lineNumber = 1
+
     let createToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
@@ -65,19 +72,18 @@ let rec scanTokens lineNumber (source: string) =
     let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
 
     let rec loop source tokens =
-        let peekNextSymbol = 
-            match List.isEmpty (List.tail source) with
-            | true -> '\n'
-            | false -> List.head source
+        let peekNextSymbol = List.tryHead (tryTail source)
 
-        let matchNext expected = peekNextSymbol = expected
+        let matchNext expected = peekNextSymbol = (Some expected)
 
         let createTokenByCondition symbolToMatch matchTokenType mismatchTokenType =
             match matchNext symbolToMatch with
             | true -> createToken matchTokenType
             | false -> createToken mismatchTokenType
 
-        let createStringToken = {Type = TokenType.String; Lexeme = String.Empty; Line = 0;} // Stub
+        let rec createStringToken = 
+            
+            {Type = TokenType.String; Lexeme = String.Empty; Line = 0;} // Stub
 
         let scanToken = function
             | '(' -> createToken TokenType.LeftParen
@@ -97,31 +103,29 @@ let rec scanTokens lineNumber (source: string) =
             | '>' -> createTokenByCondition '=' TokenType.GreaterEqual TokenType.Greater
             | '"' -> createStringToken
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
-
+        // TODO: set lineNubmer
         match source with // TODO: Requires refactoring
         | [] -> tokens
         | head::tail -> 
-            match Array.contains head ignoredSymbols with
+            match Array.contains head ignoredSymbols with 
             | true -> loop tail tokens
             | false -> 
                 let newToken = scanToken head
                 match Array.contains newToken.Type skipNextSymbol with
-                | true -> loop (List.tail tail) (tokens @ [newToken])
+                | true -> loop (tryTail tail) (tokens @ [newToken])
                 | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
 
-let run lineNumber (source: string) =
-    scanTokens lineNumber source
+let run (source: string) =
+    scanTokens source
     |> List.map (fun s -> Console.WriteLine(s.ToString()))
     |> ignore
 
 let runFile (filePath: string) =
     try
         use reader = new StreamReader(filePath)
-        reader.ReadToEnd() 
-        |> (fun source -> source.Split [|'\n'|])
-        |> Array.iteri (fun index line -> run (index + 1) line)
+        reader.ReadToEnd() |> run
     with
     | InterpreterException (line, where, message) -> report line where message
     
@@ -134,7 +138,7 @@ let rec runPrompt () =
     | true -> ()
     | false -> 
         try
-            run 1 line |> ignore
+            run line |> ignore
         with
         | InterpreterException (line, where, message) -> report line where message
         runPrompt ()
