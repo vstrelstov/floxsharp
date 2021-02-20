@@ -68,7 +68,7 @@ let rec scanTokens (source: string) =
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
 
-    // TODO: "///" is lexed like "Comment Slash:, whic is incorrect
+    // TODO: "///" is lexed like "Comment Slash:, which is incorrect
     // TODO: Perhaps it could be solved by adding skipWhile funciton
     let ignoredSymbols = [|' '; '\r'; '\t'|]
     let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual; TokenType.Comment|] // TODO: Consider renaming
@@ -106,18 +106,18 @@ let rec scanTokens (source: string) =
             | '"' -> createStringToken
             | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
-        // TODO: set lineNubmer
         match source with // TODO: Requires refactoring
         | [] -> tokens
+        | head::tail when Array.contains head ignoredSymbols -> loop tail tokens
+        | head::tail when head = '\n' ->
+            lineNumber <- (lineNumber + 1)
+            loop tail tokens
         | head::tail -> 
-            match Array.contains head ignoredSymbols with 
-            | true -> loop tail tokens
-            | false -> 
-                let newToken = scanToken head
-                if Array.contains newToken.Type skipNextSymbol then
-                    loop (tryTail tail) (tokens @ [newToken])
-                else
-                    loop tail (tokens @ [newToken])
+            let newToken = scanToken head
+            if Array.contains newToken.Type skipNextSymbol then
+                loop (tryTail tail) (tokens @ [newToken])
+            else
+                loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
 
