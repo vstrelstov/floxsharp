@@ -83,9 +83,24 @@ let rec scanTokens (source: string) =
                 createToken matchTokenType
             else createToken mismatchTokenType
 
+        let getLongToken tokenType skipFunction callback =
+            let lexeme = 
+                tryTail source
+                |> List.takeWhile skipFunction
+                |> callback
+                |> List.map (fun s -> s.ToString())
+                |> String.concat ""
+
+            { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
+
         let rec createStringToken = 
-            // This function is a stub
-            {Type = TokenType.String; Lexeme = String.Empty; Line = 0;}
+            let skipFunc = fun c -> 
+                if c = '\n' then 
+                    lineNumber <- (lineNumber + 1)
+                c <> '"'
+            let callback = fun l -> if List.isEmpty l then raise (InterpreterException (lineNumber, String.Empty, "Unterminated string")) else l
+
+            getLongToken TokenType.String skipFunc callback
 
         let scanToken = function
             | '(' -> createToken TokenType.LeftParen
@@ -117,7 +132,7 @@ let rec scanTokens (source: string) =
             if Array.contains newToken.Type skipNextSymbol then
                 loop (tryTail tail) (tokens @ [newToken])
             else
-                loop tail (tokens @ [newToken])
+                loop tail (tokens @ [newToken]) // TODO: Handle string case
 
     loop (source |> Seq.toList) []
 
