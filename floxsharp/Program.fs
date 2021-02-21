@@ -48,7 +48,6 @@ type Token =
         Type: TokenType;
         Lexeme: string;
         Line: int;
-        // TODO: Add Literal: Object
     }
 
 exception InterpreterException of int * string * string
@@ -61,31 +60,47 @@ let tryTail list =
     | [] -> list
     | head::tail -> tail
 
+let peekNextSymbol list = List.tryHead (tryTail list)
+
 let rec scanTokens (source: string) =
     let mutable lineNumber = 1
 
     let createToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
-
+    
     let ignoredSymbols = [|' '; '\r'; '\t'|]
     let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
 
     let rec loop source tokens =
-        let peekNextSymbol = List.tryHead (tryTail source)
 
-        let matchNext expected = peekNextSymbol = (Some expected)
+        let matchNext expected = peekNextSymbol source = (Some expected)
 
-        let createTokenByCondition symbolToMatch matchTokenType mismatchTokenType =
-            if matchNext symbolToMatch then
+        let createTokenByNextExpected expectedSymbol matchTokenType mismatchTokenType =
+            if matchNext expectedSymbol then
                 createToken matchTokenType
             else createToken mismatchTokenType
 
-        let rec createStringToken = 
-            // This function is a stub
-            {Type = TokenType.String; Lexeme = String.Empty; Line = 0;}
+        let getLongToken tokenType skipFunction =
+            let lexeme = 
+                tryTail source
+                |> List.takeWhile skipFunction
+                |> List.map (fun s -> s.ToString())
+                |> String.concat ""
 
-        let scanToken = function
+            { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
+
+        let createStringToken = 
+            getLongToken TokenType.String (fun c -> 
+                if c = '\n' then 
+                    lineNumber <- (lineNumber + 1)
+                c <> '"')
+
+        let createNumberToken = 
+            getLongToken TokenType.Number (fun _ -> false) // Stub
+
+        let scanToken currentChar =
+            match currentChar with
             | '(' -> createToken TokenType.LeftParen
             | ')' -> createToken TokenType.RightParen
             | '{' -> createToken TokenType.LeftBrace
@@ -96,26 +111,35 @@ let rec scanTokens (source: string) =
             | '+' -> createToken TokenType.Plus
             | ';' -> createToken TokenType.Semicolon
             | '*' -> createToken TokenType.Star
-            | '/' -> createTokenByCondition '/' TokenType.Comment TokenType.Slash
-            | '!' -> createTokenByCondition '=' TokenType.BangEqual TokenType.Bang
-            | '=' -> createTokenByCondition '=' TokenType.EqualEqual TokenType.Equal
-            | '<' -> createTokenByCondition '=' TokenType.LessEqual TokenType.Less
-            | '>' -> createTokenByCondition '=' TokenType.GreaterEqual TokenType.Greater
+            | '/' -> createTokenByNextExpected '/' TokenType.Comment TokenType.Slash
+            | '!' -> createTokenByNextExpected '=' TokenType.BangEqual TokenType.Bang
+            | '=' -> createTokenByNextExpected '=' TokenType.EqualEqual TokenType.Equal
+            | '<' -> createTokenByNextExpected '=' TokenType.LessEqual TokenType.Less
+            | '>' -> createTokenByNextExpected '=' TokenType.GreaterEqual TokenType.Greater
             | '"' -> createStringToken
-            | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+            | _ ->
+                if Char.IsDigit currentChar then
+                    createNumberToken
+                else raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
-        // TODO: set lineNubmer
-        match source with // TODO: Requires refactoring
+        match source with // TODO: Looks messed up and requires refactoring
         | [] -> tokens
+        | head::tail when Array.contains head ignoredSymbols -> loop tail tokens
+        | head::tail when head = '\n' ->
+            lineNumber <- (lineNumber + 1)
+            loop tail tokens
         | head::tail -> 
-            match Array.contains head ignoredSymbols with 
-            | true -> loop tail tokens
-            | false -> 
-                let newToken = scanToken head
-                if Array.contains newToken.Type skipNextSymbol then
-                    loop (tryTail tail) (tokens @ [newToken])
-                else
-                    loop tail (tokens @ [newToken])
+            let newToken = scanToken head
+            match newToken.Type with
+            | x when Array.contains x skipNextSymbol -> loop (tryTail tail) (tokens @ [newToken])
+            | TokenType.String -> 
+                let afterSkip = List.skip (String.length newToken.Lexeme) tail
+                let newHead = List.tryHead afterSkip
+                if newHead.IsNone || newHead.Value <> '"' then
+                    raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
+                loop (tryTail afterSkip) (tokens @ [newToken])
+            | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
+            | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
 
