@@ -129,7 +129,7 @@ let rec scanTokens (source: string) =
             match newToken.Type with
             | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual 
             | TokenType.BangEqual -> loop (tryTail tail) (tokens @ [newToken])
-            | TokenType.String -> // TODO: Может, вынесешь этот пиздец куда-нибудь? 
+            | TokenType.String -> 
                 let afterSkip = List.skip (String.length newToken.Lexeme) tail
                 let h = List.tryHead afterSkip
                 if h.IsSome && h.Value <> '"' then
