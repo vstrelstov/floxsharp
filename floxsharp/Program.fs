@@ -48,7 +48,6 @@ type Token =
         Type: TokenType;
         Lexeme: string;
         Line: int;
-        // TODO: Add Literal: Object
     }
 
 exception InterpreterException of int * string * string
@@ -91,13 +90,14 @@ let rec scanTokens (source: string) =
 
             { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
 
-        let rec createStringToken = 
-            let skipFunc = fun c -> 
+        let createStringToken = 
+            getLongToken TokenType.String (fun c -> 
                 if c = '\n' then 
                     lineNumber <- (lineNumber + 1)
-                c <> '"'
+                c <> '"')
 
-            getLongToken TokenType.String skipFunc
+        let createNumberToken = 
+            getLongToken TokenType.Number (fun _ -> false) // Stub
 
         let scanToken currentChar =
             match currentChar with
@@ -119,10 +119,10 @@ let rec scanTokens (source: string) =
             | '"' -> createStringToken
             | _ ->
                 if Char.IsDigit currentChar then
-                    createToken TokenType.Number // This is a stub
+                    createNumberToken
                 else raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
-        match source with // TODO: Requires refactoring
+        match source with // TODO: Looks messed up and requires refactoring
         | [] -> tokens
         | head::tail when Array.contains head ignoredSymbols -> loop tail tokens
         | head::tail when head = '\n' ->
