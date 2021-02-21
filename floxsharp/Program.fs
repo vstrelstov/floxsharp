@@ -71,7 +71,7 @@ let rec scanTokens (source: string) =
     let createToken tokenType = createToken tokenType String.Empty
     
     let ignoredSymbols = [|' '; '\r'; '\t'|]
-    let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual; TokenType.Comment|] // TODO: Consider renaming
+    let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
 
     let rec loop source tokens =
 
@@ -99,7 +99,8 @@ let rec scanTokens (source: string) =
 
             getLongToken TokenType.String skipFunc
 
-        let scanToken = function
+        let scanToken currentChar =
+            match currentChar with
             | '(' -> createToken TokenType.LeftParen
             | ')' -> createToken TokenType.RightParen
             | '{' -> createToken TokenType.LeftBrace
@@ -116,7 +117,10 @@ let rec scanTokens (source: string) =
             | '<' -> createTokenByNextExpected '=' TokenType.LessEqual TokenType.Less
             | '>' -> createTokenByNextExpected '=' TokenType.GreaterEqual TokenType.Greater
             | '"' -> createStringToken
-            | _ -> raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+            | _ ->
+                if Char.IsDigit currentChar then
+                    createToken TokenType.Number // This is a stub
+                else raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
         match source with // TODO: Requires refactoring
         | [] -> tokens
@@ -127,12 +131,11 @@ let rec scanTokens (source: string) =
         | head::tail -> 
             let newToken = scanToken head
             match newToken.Type with
-            | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual 
-            | TokenType.BangEqual -> loop (tryTail tail) (tokens @ [newToken])
+            | x when Array.contains x skipNextSymbol -> loop (tryTail tail) (tokens @ [newToken])
             | TokenType.String -> 
                 let afterSkip = List.skip (String.length newToken.Lexeme) tail
-                let h = List.tryHead afterSkip
-                if h.IsSome && h.Value <> '"' then
+                let newHead = List.tryHead afterSkip
+                if newHead.IsNone || newHead.Value <> '"' then
                     raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
                 loop (tryTail afterSkip) (tokens @ [newToken])
             | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
