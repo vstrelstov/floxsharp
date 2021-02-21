@@ -61,33 +61,31 @@ let tryTail list =
     | [] -> list
     | head::tail -> tail
 
+let peekNextSymbol list = List.tryHead (tryTail list)
+
 let rec scanTokens (source: string) =
     let mutable lineNumber = 1
 
     let createToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     let createToken tokenType = createToken tokenType String.Empty
-
-    // TODO: "///" is lexed like "Comment Slash:, which is incorrect
-    // TODO: Perhaps it could be solved by adding skipWhile funciton
+    
     let ignoredSymbols = [|' '; '\r'; '\t'|]
     let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual; TokenType.Comment|] // TODO: Consider renaming
 
     let rec loop source tokens =
-        let peekNextSymbol = List.tryHead (tryTail source)
 
-        let matchNext expected = peekNextSymbol = (Some expected)
+        let matchNext expected = peekNextSymbol source = (Some expected)
 
         let createTokenByNextExpected expectedSymbol matchTokenType mismatchTokenType =
             if matchNext expectedSymbol then
                 createToken matchTokenType
             else createToken mismatchTokenType
 
-        let getLongToken tokenType skipFunction callback =
+        let getLongToken tokenType skipFunction =
             let lexeme = 
                 tryTail source
                 |> List.takeWhile skipFunction
-                |> callback
                 |> List.map (fun s -> s.ToString())
                 |> String.concat ""
 
@@ -98,9 +96,8 @@ let rec scanTokens (source: string) =
                 if c = '\n' then 
                     lineNumber <- (lineNumber + 1)
                 c <> '"'
-            let callback = fun l -> if List.isEmpty l then raise (InterpreterException (lineNumber, String.Empty, "Unterminated string")) else l
 
-            getLongToken TokenType.String skipFunc callback
+            getLongToken TokenType.String skipFunc
 
         let scanToken = function
             | '(' -> createToken TokenType.LeftParen
@@ -129,10 +126,17 @@ let rec scanTokens (source: string) =
             loop tail tokens
         | head::tail -> 
             let newToken = scanToken head
-            if Array.contains newToken.Type skipNextSymbol then
-                loop (tryTail tail) (tokens @ [newToken])
-            else
-                loop tail (tokens @ [newToken]) // TODO: Handle string case
+            match newToken.Type with
+            | TokenType.GreaterEqual | TokenType.LessEqual | TokenType.EqualEqual 
+            | TokenType.BangEqual -> loop (tryTail tail) (tokens @ [newToken])
+            | TokenType.String -> // TODO: Может, вынесешь этот пиздец куда-нибудь? 
+                let afterSkip = List.skip (String.length newToken.Lexeme) tail
+                let h = List.tryHead afterSkip
+                if h.IsSome && h.Value <> '"' then
+                    raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
+                loop (tryTail afterSkip) (tokens @ [newToken])
+            | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
+            | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
 
