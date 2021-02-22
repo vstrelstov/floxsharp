@@ -1,5 +1,6 @@
 ﻿open System
 open System.IO
+open Floxsharp.Common
 
 type TokenType = 
     | LeftParen
@@ -50,18 +51,6 @@ type Token =
         Line: int;
     }
 
-exception InterpreterException of int * string * string
-
-let report line where message =
-    Console.WriteLine($"[line {line}] Error: {message}")
-
-let tryTail list =
-    match list with
-    | [] -> list
-    | head::tail -> tail
-
-let peekNextSymbol list = List.tryHead (tryTail list)
-
 let rec scanTokens (source: string) =
     let mutable lineNumber = 1
 
@@ -79,7 +68,7 @@ let rec scanTokens (source: string) =
 
     let rec loop source tokens =
 
-        let matchNext expected = peekNextSymbol source = (Some expected)
+        let matchNext expected = Common.peekNextSymbol source = (Some expected)
 
         let createTokenByNextExpected expectedSymbol matchTokenType mismatchTokenType =
             if matchNext expectedSymbol then
@@ -97,7 +86,7 @@ let rec scanTokens (source: string) =
             createLexemedToken tokenType lexeme
 
         let createStringToken = 
-            getLongToken (tryTail source) TokenType.String (fun c -> 
+            getLongToken (Common.tryTail source) TokenType.String (fun c -> 
                 if c = '\n' then 
                     lineNumber <- (lineNumber + 1)
                 c <> '"')
@@ -109,7 +98,7 @@ let rec scanTokens (source: string) =
             if List.tryHead afterSkip <> Some('.') then
                 intergerPartToken
             else
-                let fractionalPartToken = getLongToken (tryTail afterSkip) TokenType.Number skipFunc
+                let fractionalPartToken = getLongToken (Common.tryTail afterSkip) TokenType.Number skipFunc
                 createLexemedToken TokenType.Number $"{intergerPartToken.Lexeme}.{fractionalPartToken.Lexeme}"
 
         let createIdentifierToken = 
@@ -143,7 +132,7 @@ let rec scanTokens (source: string) =
                     createNumberToken
                 elif Char.IsLetter currentChar then 
                     createIdentifierToken
-                else raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+                else raise (Common.InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
         match source with // TODO: Looks messed up and requires refactoring
         | [] -> tokens
@@ -154,13 +143,13 @@ let rec scanTokens (source: string) =
         | head::tail -> 
             let newToken = scanToken head
             match newToken.Type with
-            | x when Array.contains x skipNextSymbol -> loop (tryTail tail) (tokens @ [newToken])
+            | x when Array.contains x skipNextSymbol -> loop (Common.tryTail tail) (tokens @ [newToken])
             | TokenType.String -> 
                 let afterSkip = List.skip (String.length newToken.Lexeme) tail
                 let newHead = List.tryHead afterSkip
                 if newHead.IsNone || newHead.Value <> '"' then
-                    raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
-                loop (tryTail afterSkip) (tokens @ [newToken])
+                    raise (Common.InterpreterException (lineNumber, String.Empty, "Unterminated string"))
+                loop (Common.tryTail afterSkip) (tokens @ [newToken])
             | TokenType.Number
             | TokenType.Identifier -> loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
             | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
@@ -180,7 +169,7 @@ let runFile (filePath: string) =
         use reader = new StreamReader(filePath)
         reader.ReadToEnd() |> run
     with
-    | InterpreterException (line, where, message) -> report line where message
+    | Common.InterpreterException (line, where, message) -> Common.report line where message
     
     ()
 
@@ -192,7 +181,7 @@ let rec runPrompt () =
         try
             run line |> ignore
         with
-        | InterpreterException (line, where, message) -> report line where message
+        | Common.InterpreterException (line, where, message) -> Common.report line where message
         runPrompt ()
 
 [<EntryPoint>]
