@@ -32,7 +32,7 @@ module Scanner =
         |> String.concat ""
         |> (fun res -> res.TrimStart '"')
 
-    let rec scanTokens (source: string) =
+    let scanTokens (source: string) =
         let mutable lineNumber = 1
     
         let createLexemedToken tokenType lexeme = 
