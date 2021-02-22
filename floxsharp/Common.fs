@@ -1,5 +1,6 @@
 ﻿namespace Floxsharp.Common
 
+[<AutoOpen>]
 module Common =
     open System 
 
