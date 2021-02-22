@@ -6,6 +6,7 @@ open Floxsharp.Interpreter.Scanning
 
 module Scanner =
     let private ignoredSymbols = [|' '; '\r'; '\t'|]
+    let private doubleTokens = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|]
     let private keywords = Map [
         ("and", TokenType.And); 
         ("class", TokenType.Class); 
@@ -38,13 +39,11 @@ module Scanner =
             { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
     
         let createToken tokenType = createLexemedToken tokenType String.Empty
-        // TODO: Consider renaming this
-        let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|]
-        
+                
         let rec loop source tokens = 
             let matchNext expected = Common.peekNextSymbol source = (Some expected)
     
-            let createTokenByNextExpected expectedSymbol matchTokenType mismatchTokenType =
+            let createTokenByNextSymbol expectedSymbol matchTokenType mismatchTokenType =
                 if matchNext expectedSymbol then
                     createToken matchTokenType
                 else createToken mismatchTokenType
@@ -56,7 +55,7 @@ module Scanner =
                     c <> '"')
                 createLexemedToken TokenType.String lexeme
     
-            let createNumberToken = // TODO: Looks messed up and requires refactoring
+            let createNumberToken =
                 let skipFunc = fun c -> Char.IsDigit c
                 let integer = getLexeme source skipFunc
                 let afterSkip = List.skip (String.length integer) source
@@ -86,11 +85,11 @@ module Scanner =
                 | '+' -> createToken TokenType.Plus
                 | ';' -> createToken TokenType.Semicolon
                 | '*' -> createToken TokenType.Star
-                | '/' -> createTokenByNextExpected '/' TokenType.Comment TokenType.Slash
-                | '!' -> createTokenByNextExpected '=' TokenType.BangEqual TokenType.Bang
-                | '=' -> createTokenByNextExpected '=' TokenType.EqualEqual TokenType.Equal
-                | '<' -> createTokenByNextExpected '=' TokenType.LessEqual TokenType.Less
-                | '>' -> createTokenByNextExpected '=' TokenType.GreaterEqual TokenType.Greater
+                | '/' -> createTokenByNextSymbol '/' TokenType.Comment TokenType.Slash
+                | '!' -> createTokenByNextSymbol '=' TokenType.BangEqual TokenType.Bang
+                | '=' -> createTokenByNextSymbol '=' TokenType.EqualEqual TokenType.Equal
+                | '<' -> createTokenByNextSymbol '=' TokenType.LessEqual TokenType.Less
+                | '>' -> createTokenByNextSymbol '=' TokenType.GreaterEqual TokenType.Greater
                 | '"' -> createStringToken
                 | _ ->
                     if Char.IsDigit currentChar then
@@ -108,7 +107,7 @@ module Scanner =
             | head::tail -> 
                 let newToken = scanToken head
                 match newToken.Type with
-                | x when Array.contains x skipNextSymbol -> loop (Common.tryTail tail) (tokens @ [newToken])
+                | x when Array.contains x doubleTokens -> loop (Common.tryTail tail) (tokens @ [newToken])
                 | TokenType.String -> 
                     let afterSkip = List.skip (String.length newToken.Lexeme) tail
                     let newHead = List.tryHead afterSkip
