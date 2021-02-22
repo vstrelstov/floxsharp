@@ -116,7 +116,7 @@ let rec scanTokens (source: string) =
             let skipFunc = fun c -> Char.IsLetterOrDigit c
             let token = getLongToken source TokenType.Identifier skipFunc
             if Map.containsKey (token.Lexeme.ToLower()) keywords then
-                createToken keywords.[token.Lexeme.ToLower()]
+                createLexemedToken keywords.[token.Lexeme.ToLower()] token.Lexeme
             else 
                 createLexemedToken TokenType.Identifier token.Lexeme
 
@@ -164,7 +164,8 @@ let rec scanTokens (source: string) =
             | TokenType.Number
             | TokenType.Identifier -> loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
             | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
-            // TODO: Add keyword handling
+            | _ when Map.containsKey newToken.Lexeme keywords -> 
+                loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
             | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
