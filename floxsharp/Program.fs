@@ -65,12 +65,17 @@ let peekNextSymbol list = List.tryHead (tryTail list)
 let rec scanTokens (source: string) =
     let mutable lineNumber = 1
 
-    let createToken tokenType lexeme = 
+    let createLexemedToken tokenType lexeme = 
         { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
-    let createToken tokenType = createToken tokenType String.Empty
+
+    let createToken tokenType = createLexemedToken tokenType String.Empty
     
     let ignoredSymbols = [|' '; '\r'; '\t'|]
     let skipNextSymbol = [|TokenType.GreaterEqual; TokenType.LessEqual; TokenType.EqualEqual; TokenType.BangEqual|] // TODO: Consider renaming
+    let keywords = Map [("and", TokenType.And); ("class", TokenType.Class); ("else", TokenType.Else); ("false", TokenType.False);
+        ("for", TokenType.For); ("fun", TokenType.Fun); ("if", TokenType.If); ("nil", TokenType.Nil); ("or", TokenType.Or);
+        ("print", TokenType.Print); ("return", TokenType.Return); ("super", TokenType.Super); ("this", TokenType.This);
+        ("true", TokenType.True); ("var", TokenType.Var); ("while", TokenType.While)]
 
     let rec loop source tokens =
 
@@ -89,7 +94,7 @@ let rec scanTokens (source: string) =
                 |> String.concat ""
                 |> (fun s -> s.TrimStart '"')
 
-            { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
+            createLexemedToken tokenType lexeme
 
         let createStringToken = 
             getLongToken (tryTail source) TokenType.String (fun c -> 
@@ -97,7 +102,7 @@ let rec scanTokens (source: string) =
                     lineNumber <- (lineNumber + 1)
                 c <> '"')
 
-        let createNumberToken = 
+        let createNumberToken = // TODO: Looks messed up and requires refactoring
             let skipFunc = fun c -> Char.IsDigit c
             let intergerPartToken = getLongToken source TokenType.Number skipFunc
             let afterSkip = List.skip (String.length intergerPartToken.Lexeme) source
@@ -105,7 +110,15 @@ let rec scanTokens (source: string) =
                 intergerPartToken
             else
                 let fractionalPartToken = getLongToken (tryTail afterSkip) TokenType.Number skipFunc
-                { Type = TokenType.Number; Lexeme = $"{intergerPartToken.Lexeme}.{fractionalPartToken.Lexeme}"; Line = lineNumber }
+                createLexemedToken TokenType.Number $"{intergerPartToken.Lexeme}.{fractionalPartToken.Lexeme}"
+
+        let createIdentifierToken = 
+            let skipFunc = fun c -> Char.IsLetterOrDigit c
+            let token = getLongToken source TokenType.Identifier skipFunc
+            if Map.containsKey (token.Lexeme.ToLower()) keywords then
+                createToken keywords.[token.Lexeme.ToLower()]
+            else 
+                createLexemedToken TokenType.Identifier token.Lexeme
 
         let scanToken currentChar =
             match currentChar with
@@ -128,6 +141,8 @@ let rec scanTokens (source: string) =
             | _ ->
                 if Char.IsDigit currentChar then
                     createNumberToken
+                elif Char.IsLetter currentChar then 
+                    createIdentifierToken
                 else raise (InterpreterException (lineNumber, String.Empty, "Unexpected character"))
 
         match source with // TODO: Looks messed up and requires refactoring
@@ -146,8 +161,10 @@ let rec scanTokens (source: string) =
                 if newHead.IsNone || newHead.Value <> '"' then
                     raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
                 loop (tryTail afterSkip) (tokens @ [newToken])
-            | TokenType.Number -> loop(List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
+            | TokenType.Number
+            | TokenType.Identifier -> loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
             | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
+            // TODO: Add keyword handling
             | _ -> loop tail (tokens @ [newToken])
 
     loop (source |> Seq.toList) []
