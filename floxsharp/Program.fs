@@ -81,23 +81,31 @@ let rec scanTokens (source: string) =
                 createToken matchTokenType
             else createToken mismatchTokenType
 
-        let getLongToken tokenType skipFunction =
+        let getLongToken src tokenType skipFunction =
             let lexeme = 
-                tryTail source
+                src
                 |> List.takeWhile skipFunction
                 |> List.map (fun s -> s.ToString())
                 |> String.concat ""
+                |> (fun s -> s.TrimStart '"')
 
             { Type = tokenType; Lexeme = lexeme; Line = lineNumber }
 
         let createStringToken = 
-            getLongToken TokenType.String (fun c -> 
+            getLongToken (tryTail source) TokenType.String (fun c -> 
                 if c = '\n' then 
                     lineNumber <- (lineNumber + 1)
                 c <> '"')
 
         let createNumberToken = 
-            getLongToken TokenType.Number (fun _ -> false) // Stub
+            let skipFunc = fun c -> Char.IsDigit c
+            let intergerPartToken = getLongToken source TokenType.Number skipFunc
+            let afterSkip = List.skip (String.length intergerPartToken.Lexeme) source
+            if List.tryHead afterSkip <> Some('.') then
+                intergerPartToken
+            else
+                let fractionalPartToken = getLongToken (tryTail afterSkip) TokenType.Number skipFunc
+                { Type = TokenType.Number; Lexeme = $"{intergerPartToken.Lexeme}.{fractionalPartToken.Lexeme}"; Line = lineNumber }
 
         let scanToken currentChar =
             match currentChar with
@@ -138,6 +146,7 @@ let rec scanTokens (source: string) =
                 if newHead.IsNone || newHead.Value <> '"' then
                     raise (InterpreterException (lineNumber, String.Empty, "Unterminated string"))
                 loop (tryTail afterSkip) (tokens @ [newToken])
+            | TokenType.Number -> loop(List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
             | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
             | _ -> loop tail (tokens @ [newToken])
 
