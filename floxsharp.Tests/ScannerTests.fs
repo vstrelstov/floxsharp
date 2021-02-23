@@ -15,6 +15,10 @@ type ScannerTests () =
         Scanner.scanTokens src |> List.map (fun token -> (token.Type, token.Lexeme))
 
     [<TestMethod>]
+    member this.ScanEmptySource () =
+        Assert.IsTrue(getTokenTypes "" |> List.isEmpty)
+
+    [<TestMethod>]
     member this.ScanSingleTokens () =
         let source = "({*-+.;},"
         let actual = getTokenTypes source
