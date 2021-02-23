@@ -32,7 +32,7 @@ module Scanner =
         |> String.concat ""
         |> (fun res -> res.TrimStart '"')
 
-    let rec scanTokens (source: string) =
+    let scanTokens (source: string) =
         let mutable lineNumber = 1
     
         let createLexemedToken tokenType lexeme = 
@@ -97,6 +97,13 @@ module Scanner =
                     elif Char.IsLetter currentChar then 
                         createIdentifierToken
                     else raise (Common.InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+
+            let postprocessStringToken src lexeme = 
+                let newSource = List.skip (String.length lexeme) src
+                let newHead = List.tryHead newSource
+                if Option.isNone newHead || newHead.Value <> '"' then
+                    raise (Common.InterpreterException (lineNumber, String.Empty, "Unterminated string"))
+                else Common.tryTail newSource
     
             match source with // TODO: Looks messed up and requires refactoring
             | [] -> tokens
@@ -108,15 +115,10 @@ module Scanner =
                 let newToken = scanToken head
                 match newToken.Type with
                 | x when Array.contains x doubleTokens -> loop (Common.tryTail tail) (tokens @ [newToken])
-                | TokenType.String -> 
-                    let afterSkip = List.skip (String.length newToken.Lexeme) tail
-                    let newHead = List.tryHead afterSkip
-                    if newHead.IsNone || newHead.Value <> '"' then
-                        raise (Common.InterpreterException (lineNumber, String.Empty, "Unterminated string"))
-                    loop (Common.tryTail afterSkip) (tokens @ [newToken])
+                | TokenType.String -> loop (postprocessStringToken tail newToken.Lexeme) (tokens @ [newToken])
+                | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
                 | TokenType.Number
                 | TokenType.Identifier -> loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
-                | TokenType.Comment -> loop (List.skipWhile (fun c -> c <> '\n') tail) (tokens @ [newToken])
                 | _ when Map.containsKey newToken.Lexeme keywords -> 
                     loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
                 | _ -> loop tail (tokens @ [newToken])
