@@ -96,13 +96,13 @@ module Scanner =
                         createNumberToken
                     elif Char.IsLetter currentChar then 
                         createIdentifierToken
-                    else raise (Common.InterpreterException (lineNumber, String.Empty, "Unexpected character"))
+                    else raise <| Common.InterpreterException (lineNumber, String.Empty, "Unexpected character")
 
             let postprocessStringToken src lexeme = 
                 let newSource = List.skip (String.length lexeme) src
                 let newHead = List.tryHead newSource
                 if Option.isNone newHead || newHead.Value <> '"' then
-                    raise (Common.InterpreterException (lineNumber, String.Empty, "Unterminated string"))
+                    raise <| Common.InterpreterException (lineNumber, String.Empty, "Unterminated string")
                 else Common.tryTail newSource
     
             match source with // TODO: Looks messed up and requires refactoring
