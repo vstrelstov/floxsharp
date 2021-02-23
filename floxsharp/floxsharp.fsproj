@@ -9,6 +9,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="ScannerTypes.fs" />
     <Compile Include="Scanner.fs" />
+    <Compile Include="ParserTypes.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
