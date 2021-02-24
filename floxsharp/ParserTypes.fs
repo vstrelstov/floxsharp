@@ -3,9 +3,9 @@
 open Floxsharp.Interpreter.Scanning
 
 [<AutoOpen>]
-module ParserTypes = // This is a module stub
-    type DummyType =
-        {
-            Id: int;
-        }
-    // TODO: Add Expression types
+module ParserTypes =
+    type Expression = 
+        | Binary of Left: Expression * Operator: Token * Right: Expression
+        | Unary of Operator: Token * Right: Expression
+        | Grouping of Expression: Expression
+        | Literal of Value: obj // Token types: Number, String, True, False, Nil
