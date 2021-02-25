@@ -123,4 +123,5 @@ module Scanner =
                     loop (List.skip (String.length newToken.Lexeme) source) (tokens @ [newToken])
                 | _ -> loop tail (tokens @ [newToken])
     
-        loop (source |> Seq.toList) []
+        (loop (source |> Seq.toList) []) @ 
+            [{ Type = TokenType.EOF; Line = lineNumber; Lexeme = String.Empty }]
