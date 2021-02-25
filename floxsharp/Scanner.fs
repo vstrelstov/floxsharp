@@ -108,7 +108,7 @@ module Scanner =
             match source with // TODO: Looks messed up and requires refactoring
             | [] -> tokens
             | head::tail when Array.contains head ignoredSymbols -> loop tail tokens
-            | head::tail when head = '\n' ->
+            | '\n'::tail ->
                 lineNumber <- (lineNumber + 1)
                 loop tail tokens
             | head::tail -> 

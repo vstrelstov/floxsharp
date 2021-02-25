@@ -47,9 +47,9 @@ type ScannerTests () =
 
     [<TestMethod>]
     member this.ScanString () =
-        let source = "\"asdf\"\"qwer\""
+        let source = "\"asdf\nght\"\"qwer\""
         let actual = getTokenTypesAndLexemes source
-        let expected = [(TokenType.String, "asdf"); (TokenType.String, "qwer")]
+        let expected = [(TokenType.String, "asdf\nght"); (TokenType.String, "qwer")]
         Assert.AreEqual(expected, actual)
 
     [<TestMethod>]
@@ -61,7 +61,7 @@ type ScannerTests () =
 
     [<TestMethod>]
     member this.ScanExpression () = 
-        let source = "var nullValue = nil; if nullValue == nil print;"
+        let source = "var nullValue = nil; \n if nullValue == nil print;"
         let actual = getTokenTypesAndLexemes source
         let expected = [(TokenType.Var, "var"); (TokenType.Identifier, "nullValue"); (TokenType.Equal, ""); 
             (TokenType.Nil, "nil"); (TokenType.Semicolon, ""); (TokenType.If, "if"); (TokenType.Identifier, "nullValue");
