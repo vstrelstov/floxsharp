@@ -11,7 +11,7 @@ type ParserTests () =
     [<TestMethod>]
     member this.PrettyPrintSimpleExpression () =
         let sampleExpression = Binary (Literal 1, { Type = TokenType.Plus; Lexeme = "+"; Line = 1}, Literal 2)
-        let actual = Parser.printExpression sampleExpression
+        let actual = Parser.prettyPrint sampleExpression
         let expected = "(+ 1 2)"
         Assert.AreEqual(expected, actual)
 
@@ -21,6 +21,6 @@ type ParserTests () =
             Binary (Unary ({ Type = TokenType.Minus; Lexeme = "-"; Line = 1; }, Literal 123),
                 { Type = TokenType.Star; Lexeme = "*"; Line = 1},
                 Grouping (Literal 45.67))
-        let actual = Parser.printExpression sampleExpression
+        let actual = Parser.prettyPrint sampleExpression
         let expected = "(* (- 123) (group 45.67))"
         Assert.AreEqual(expected, actual)

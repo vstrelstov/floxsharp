@@ -6,8 +6,8 @@ open Floxsharp.Interpreter.Parsing
 
 module Parser =
     [<Obsolete("This function was used for testing purposes")>]
-    let printExpression expression = 
-        let rec matchExpressionType exp =
+    let prettyPrint expression = 
+        let rec printExpression exp =
             let groupingName = "group"
             match exp with
             | Literal value -> Convert.ToString(value, CultureInfo.InvariantCulture)
@@ -16,12 +16,12 @@ module Parser =
             | Binary (left, operator, right) -> $"{parenthesize operator.Lexeme [left; right]})"
         
         and parenthesize name expressions = 
-            let rec loop expressions lst = // TODO: Rename lst
+            let rec loop expressions printedExpressions =
                 match expressions with
-                | [] -> lst
-                | head::tail -> loop tail (lst @ [$" {matchExpressionType head}"])
+                | [] -> printedExpressions
+                | head::tail -> loop tail (printedExpressions @ [$" {printExpression head}"])
             
             loop expressions [$"({name}"] |> String.concat ""
 
-        matchExpressionType expression
+        printExpression expression
         
