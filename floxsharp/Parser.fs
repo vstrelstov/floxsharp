@@ -2,9 +2,11 @@
 
 open System
 open System.Globalization
+open Floxsharp.Interpreter.Scanning
 open Floxsharp.Interpreter.Parsing
 
 module Parser =
+
     [<Obsolete("This function was used for testing purposes")>]
     let prettyPrint expression = 
         let rec printExpression exp =
@@ -24,4 +26,10 @@ module Parser =
             loop expressions [$"({name}"] |> String.concat ""
 
         printExpression expression
-        
+    
+    let private matchToken list =
+        let matchType tokenTypes = 
+            let head = List.tryHead list
+            Option.isSome head && Array.contains head.Value tokenTypes
+        matchType
+    
