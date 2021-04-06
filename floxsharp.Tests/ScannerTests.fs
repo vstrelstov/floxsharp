@@ -16,7 +16,11 @@ type ScannerTests () =
 
     [<TestMethod>]
     member this.ScanEmptySource () =
-        Assert.Equals([TokenType.EOF], getTokenTypes "")
+        Assert.AreEqual([TokenType.EOF], getTokenTypes "")
+
+    [<TestMethod>]
+    member this.ScanIgnoredSymbols () =
+        Assert.AreEqual([TokenType.EOF], getTokenTypes "\n \t\r")
 
     [<TestMethod>]
     member this.ScanSingleTokens () =
