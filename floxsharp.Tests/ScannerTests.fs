@@ -78,6 +78,13 @@ type ScannerTests () =
         Assert.AreEqual(expected, actual)
 
     [<TestMethod>]
+    member this.ScanExpressionWithUnseparatedKeywords () = 
+        let source = "vartruefalse"
+        let actual = getTokenTypesAndLexemes source
+        let expected = [(TokenType.Identifier, "vartruefalse"); (TokenType.EOF, "")]
+        Assert.AreEqual(expected, actual)
+
+    [<TestMethod>]
     [<ExpectedException(typeof<Common.InterpreterException>)>]
     member this.ScanUnexpectedSymbol () = 
         let source = "var a = &&&"
