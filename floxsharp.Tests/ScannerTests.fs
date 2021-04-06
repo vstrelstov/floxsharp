@@ -16,7 +16,11 @@ type ScannerTests () =
 
     [<TestMethod>]
     member this.ScanEmptySource () =
-        Assert.Equals([TokenType.EOF], getTokenTypes "")
+        Assert.AreEqual([TokenType.EOF], getTokenTypes "")
+
+    [<TestMethod>]
+    member this.ScanIgnoredSymbols () =
+        Assert.AreEqual([TokenType.EOF], getTokenTypes "\n \t\r")
 
     [<TestMethod>]
     member this.ScanSingleTokens () =
@@ -75,6 +79,13 @@ type ScannerTests () =
         let actual = getTokenTypesAndLexemes source
         let expected = [(TokenType.Var, "var"); (TokenType.Identifier, "str"); (TokenType.Equal, ""); 
             (TokenType.String, "abc"); (TokenType.Semicolon, ""); (TokenType.Comment, ""); (TokenType.EOF, "")]
+        Assert.AreEqual(expected, actual)
+
+    [<TestMethod>]
+    member this.ScanExpressionWithUnseparatedKeywords () = 
+        let source = "vartruefalse"
+        let actual = getTokenTypesAndLexemes source
+        let expected = [(TokenType.Identifier, "vartruefalse"); (TokenType.EOF, "")]
         Assert.AreEqual(expected, actual)
 
     [<TestMethod>]
