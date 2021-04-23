@@ -27,30 +27,36 @@ module Parser =
             loop expressions [$"({name}"] |> String.concat ""
 
         printExpression expression
-    
-    let private matchToken tokenTypes =
-        let matchType list = 
-            let head = List.tryHead list
-            Option.isSome head && Array.contains head.Value.Type tokenTypes
+
+    let private matchToken tokenTypes = 
+        let matchType token =
+            Array.contains token.Type tokenTypes
         matchType
 
-    let private parseComparison () = () // Stub to be implemented later
-    
-    let private parseEquality tokensList = 
-        let equalityTokenTypes = [|TokenType.BangEqual; TokenType.EqualEqual|]
-        
-        Binary (Literal (null), { Type = TokenType.EOF; Lexeme = ""; Line = 0}, Literal (null))// TODO: Replace stub values
-    
-    let private parseExpression () = parseEquality List.empty<Token> // Stub to be implemented later
+    // General TODO: Thenk of changing tokensList before passing it to other functions
 
-    let private primary list = // Stub function
+    let private parseComparison tokensList = Literal (null) // Stub to be implemented later
+    
+    let private parseEquality tokensList = // TODO: Think of fail path
+        let left = parseComparison tokensList
+        let skipFunc = (fun token -> matchToken [|TokenType.BangEqual; TokenType.EqualEqual|] token)
+        let operator = List.takeWhile skipFunc tokensList |> List.rev |> List.head
+        let right = parseComparison tokensList
+
+        Binary (left, operator, right)
+    
+    let private parseExpression tokensList = parseEquality tokensList // To be implemented later
+
+    let private primary list = // Stub to be implemented later
         Literal null
     
     let rec private unary list = 
-        if matchToken [|TokenType.Bang; TokenType.Minus|] list then
-            let operator = List.tryHead list // TODO: Probably should raise an exception if list is empty
-            let right = unary (Common.tryTail list)
-            Unary (operator.Value, right)
-        else 
-            primary list // TODO: Modify parameter if needed
-    
+        let head = List.tryHead list
+        match head with
+        | None -> primary list
+        | _ -> 
+            if matchToken [|TokenType.Bang; TokenType.Minus|] head.Value then
+                let right = unary (Common.tryTail list)
+                Unary (head.Value, right)
+            else
+                primary list
