@@ -33,30 +33,59 @@ module Parser =
             Array.contains token.Type tokenTypes
         matchType
 
-    // General TODO: Thenk of changing tokensList before passing it to other functions
+    // TODO: Think of fail path
+    // TODO: Find another way to get operator
+    let private getOperator tokensList = 
+        let skip skipFunc =
+            List.takeWhile skipFunc tokensList |> List.rev |> List.head
+        skip 
 
-    let private parseComparison tokensList = Literal (null) // Stub to be implemented later
+    // TODO: Parsing functions require refactoring
+
+    let private parsePrimary list = // Stub to be implemented later
+        Literal null
+
+    let rec private parseUnary tokensList = 
+        let head = List.tryHead tokensList
+        match head with
+        | None -> parsePrimary tokensList
+        | _ -> 
+            if matchToken [|TokenType.Bang; TokenType.Minus|] head.Value then
+                let right = parseUnary (Common.tryTail tokensList)
+                Unary (head.Value, right)
+            else
+                parsePrimary tokensList
+
+    let private parseFactor tokensList = 
+        let left = parseUnary tokensList
+        let skipFunc = matchToken [|TokenType.Slash; TokenType.Star|]
+        let operator = getOperator tokensList skipFunc
+        let right = parseUnary (List.skipWhile skipFunc tokensList)
+
+        Binary (left, operator, right)
+
+    let private parseTerm tokensList = 
+        let left = parseFactor tokensList
+        let skipFunc = matchToken [|TokenType.Minus; TokenType.Plus|]
+        let operator = getOperator tokensList skipFunc
+        let right = parseFactor (List.skipWhile skipFunc tokensList)
+        
+        Binary (left, operator, right)
+
+    let private parseComparison tokensList = 
+        let left = parseTerm tokensList
+        let skipFunc = matchToken [|TokenType.Greater; TokenType.GreaterEqual; TokenType.Less; TokenType.LessEqual|]
+        let operator = getOperator tokensList skipFunc
+        let right = parseTerm (List.skipWhile skipFunc tokensList)
+        
+        Binary (left, operator, right)
     
-    let private parseEquality tokensList = // TODO: Think of fail path
+    let private parseEquality tokensList =
         let left = parseComparison tokensList
-        let skipFunc = (fun token -> matchToken [|TokenType.BangEqual; TokenType.EqualEqual|] token)
-        let operator = List.takeWhile skipFunc tokensList |> List.rev |> List.head
-        let right = parseComparison tokensList
+        let skipFunc = matchToken [|TokenType.BangEqual; TokenType.EqualEqual|]
+        let operator = getOperator tokensList skipFunc
+        let right = parseComparison (List.skipWhile skipFunc tokensList)
 
         Binary (left, operator, right)
     
-    let private parseExpression tokensList = parseEquality tokensList // To be implemented later
-
-    let private primary list = // Stub to be implemented later
-        Literal null
-    
-    let rec private unary list = 
-        let head = List.tryHead list
-        match head with
-        | None -> primary list
-        | _ -> 
-            if matchToken [|TokenType.Bang; TokenType.Minus|] head.Value then
-                let right = unary (Common.tryTail list)
-                Unary (head.Value, right)
-            else
-                primary list
+    let private parseExpression tokensList = parseEquality tokensList
