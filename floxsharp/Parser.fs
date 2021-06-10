@@ -34,13 +34,11 @@ module Parser =
         matchType
 
     // TODO: Think of fail path
-    // TODO: Find another way to get operator
+    // TODO: Find another way to get operator?
     let private getOperator tokensList = 
         let skip skipFunc =
             List.takeWhile skipFunc tokensList |> List.rev |> List.head
         skip 
-
-    // TODO: Parsing functions require refactoring
 
     let private parsePrimary list = // Stub to be implemented later
         Literal null
@@ -56,36 +54,24 @@ module Parser =
             else
                 parsePrimary tokensList
 
-    let private parseFactor tokensList = 
-        let left = parseUnary tokensList
-        let skipFunc = matchToken [|TokenType.Slash; TokenType.Star|]
+    let private binaryParsingFunc tokensList leftParsingFunc tokensToSkip =
+        let left = leftParsingFunc tokensList
+        let skipFunc = matchToken tokensToSkip
         let operator = getOperator tokensList skipFunc
-        let right = parseUnary (List.skipWhile skipFunc tokensList)
-
-        Binary (left, operator, right)
-
-    let private parseTerm tokensList = 
-        let left = parseFactor tokensList
-        let skipFunc = matchToken [|TokenType.Minus; TokenType.Plus|]
-        let operator = getOperator tokensList skipFunc
-        let right = parseFactor (List.skipWhile skipFunc tokensList)
+        let right = leftParsingFunc (List.skipWhile skipFunc tokensList)
         
-        Binary (left, operator, right)
+        Binary (left, operator, right)   
 
-    let private parseComparison tokensList = 
-        let left = parseTerm tokensList
-        let skipFunc = matchToken [|TokenType.Greater; TokenType.GreaterEqual; TokenType.Less; TokenType.LessEqual|]
-        let operator = getOperator tokensList skipFunc
-        let right = parseTerm (List.skipWhile skipFunc tokensList)
-        
-        Binary (left, operator, right)
+    let private parseFactor tokensList =
+        binaryParsingFunc tokensList parseUnary [|TokenType.Slash; TokenType.Star|] 
+    
+    let private parseTerm tokensList =
+        binaryParsingFunc tokensList parseFactor [|TokenType.Minus; TokenType.Plus|] 
+
+    let private parseComparison tokensList =
+        binaryParsingFunc tokensList parseTerm [|TokenType.Greater; TokenType.GreaterEqual; TokenType.Less; TokenType.LessEqual|]
     
     let private parseEquality tokensList =
-        let left = parseComparison tokensList
-        let skipFunc = matchToken [|TokenType.BangEqual; TokenType.EqualEqual|]
-        let operator = getOperator tokensList skipFunc
-        let right = parseComparison (List.skipWhile skipFunc tokensList)
-
-        Binary (left, operator, right)
+        binaryParsingFunc tokensList parseComparison [|TokenType.BangEqual; TokenType.EqualEqual|] 
     
     let private parseExpression tokensList = parseEquality tokensList
