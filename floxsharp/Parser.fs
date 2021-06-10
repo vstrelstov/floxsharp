@@ -41,7 +41,10 @@ module Parser =
         skip 
 
     let private parsePrimary list = // Stub to be implemented later
-        Literal null
+        let firstSymbol = List.head list
+        match firstSymbol with
+        | TokenType.True -> Literal True
+        | TokenType.False -> Literal False
 
     let rec private parseUnary tokensList = 
         let head = List.tryHead tokensList

@@ -4,6 +4,7 @@ open Floxsharp.Interpreter.Scanning
 
 [<AutoOpen>]
 module ParserTypes =
+    // TODO: Introduce literal values type?
     type Expression = 
         | Binary of Left: Expression * Operator: Token * Right: Expression
         | Unary of Operator: Token * Right: Expression
