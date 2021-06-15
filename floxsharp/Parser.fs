@@ -40,11 +40,16 @@ module Parser =
             List.takeWhile skipFunc tokensList |> List.rev |> List.head
         skip 
 
-    let private parsePrimary list = // Stub to be implemented later
+    let private parsePrimary list =
         let firstSymbol = List.head list
         match firstSymbol.Type with
         | TokenType.True -> Literal True
         | TokenType.False -> Literal False
+        | TokenType.Nil -> Literal Nil
+        | TokenType.Number
+        | TokenType.String -> Literal firstSymbol.Lexeme
+        // TODO: Handle grouping
+        
 
     let rec private parseUnary tokensList = 
         let head = List.tryHead tokensList
