@@ -42,7 +42,7 @@ module Parser =
 
     let private parsePrimary list = // Stub to be implemented later
         let firstSymbol = List.head list
-        match firstSymbol with
+        match firstSymbol.Type with
         | TokenType.True -> Literal True
         | TokenType.False -> Literal False
 
