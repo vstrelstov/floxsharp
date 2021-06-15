@@ -43,9 +43,9 @@ module Parser =
     let private parsePrimary list =
         let firstSymbol = List.head list
         match firstSymbol.Type with
-        | TokenType.True -> Literal True
-        | TokenType.False -> Literal False
-        | TokenType.Nil -> Literal Nil
+        | TokenType.True -> Literal true
+        | TokenType.False -> Literal false
+        | TokenType.Nil -> Literal null
         | TokenType.Number
         | TokenType.String -> Literal firstSymbol.Lexeme
         // TODO: Handle grouping
