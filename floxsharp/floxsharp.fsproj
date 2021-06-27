@@ -10,8 +10,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Common.fs" />
     <Compile Include="ScannerTypes.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="Scanner.fs" />
     <Compile Include="ParserTypes.fs" />
     <Compile Include="Parser.fs" />

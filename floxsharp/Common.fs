@@ -1,5 +1,7 @@
 ﻿namespace Floxsharp.Common
 
+open Floxsharp.Interpreter.Scanning
+
 [<AutoOpen>]
 module Common =
     open System 
@@ -14,3 +16,8 @@ module Common =
     exception InterpreterException of int * string * string
 
     let report line where message = Console.WriteLine($"[line {line}] Error: {message}")
+        
+    let reportTokenError token message =
+        match token.Type with
+        | TokenType.EOF -> report token.Line "at end" message
+        | _ -> report token.Line $"at '{token.Lexeme}'" message
