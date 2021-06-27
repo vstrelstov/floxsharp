@@ -7,7 +7,7 @@ module Common =
     let tryTail list =
         match list with
         | [] -> list
-        | head::tail -> tail
+        | _::tail -> tail
     
     let peekNextSymbol list = List.tryHead (tryTail list)
 
