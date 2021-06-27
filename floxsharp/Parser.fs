@@ -60,7 +60,7 @@ module Parser =
             raiseParserError currentToken errorMessage
         
     // Possible bugs' nest. Revise.
-    let rec parsePrimary (tokens : Token array) =
+    let rec private parsePrimary (tokens : Token array) =
         let currentToken = tokens.[currentTokenPosition]
         if (matchTokenType currentToken [|TokenType.Number; TokenType.String|]) then
             Literal (previous tokens).Lexeme
@@ -68,8 +68,10 @@ module Parser =
             let insideExpression = parseExpression tokens
             consume tokens TokenType.RightParen "Expected ')' after expression" |> ignore 
             Grouping insideExpression
-        else // TODO: Handle literal.True and literal.False
-            Literal null
+        elif (matchTokenType currentToken [|TokenType.True|]) then
+            Literal True
+        else
+            Literal False
     and parseExpression tokens = parseEquality tokens
     and parseEquality tokens = 
         parseBinary tokens parseComparison [| TokenType.BangEqual; TokenType.EqualEqual |]
