@@ -48,7 +48,7 @@ module Parser =
             currentTokenPosition <- currentTokenPosition + 1
         previous tokens
     
-    let raiseParserError token errorMessage =
+    let private raiseParserError token errorMessage =
         Common.reportTokenError token errorMessage
         raise <| InterpreterException (token.Line, token.Lexeme, errorMessage)
     
@@ -70,26 +70,30 @@ module Parser =
             Grouping insideExpression
         elif (matchTokenType currentToken [|TokenType.True|]) then
             Literal True
-        else
+        elif (matchTokenType currentToken [|TokenType.False|]) then
             Literal False
-    and parseExpression tokens = parseEquality tokens
-    and parseEquality tokens = 
+        else
+            raiseParserError currentToken "Expect expression"
+    and private parseExpression tokens = parseEquality tokens
+    and private parseEquality tokens = 
         parseBinary tokens parseComparison [| TokenType.BangEqual; TokenType.EqualEqual |]
-    and parseBinary tokens parseSideFunc tokenTypesToMatch = 
+    and private parseBinary tokens parseSideFunc tokenTypesToMatch = 
         let left = parseSideFunc tokens
         let skippedTokens =
             Array.skip currentTokenPosition tokens
             |> Array.takeWhile (fun t -> matchTokenType t tokenTypesToMatch)
-        let operator = Array.last skippedTokens
+        let operator = Array.last skippedTokens // TODO: Fails when the array is empty
+        let op = match skippedTokens with
+            | [||] -> 
         let right = parseSideFunc tokens
         Binary (left, operator, right)
-    and parseComparison tokens =
+    and private parseComparison tokens =
         parseBinary tokens parseTerm [| TokenType.Greater; TokenType.GreaterEqual; TokenType.Less; TokenType.LessEqual |]
-    and parseTerm tokens =
+    and private parseTerm tokens =
         parseBinary tokens parseFactor [| TokenType.Minus; TokenType.Plus |]
-    and parseFactor tokens =
+    and private parseFactor tokens =
         parseBinary tokens parseUnary [| TokenType.Slash; TokenType.Star |]
-    and parseUnary (tokens : Token array) =
+    and private parseUnary (tokens : Token array) =
         if matchTokenType tokens.[currentTokenPosition] [|TokenType.Bang; TokenType.Minus|] then
             let operator = previous tokens
             let right = parseUnary tokens
@@ -97,4 +101,8 @@ module Parser =
         else
             parsePrimary tokens
 
-    
+    let parse tokens =
+        try
+            parseExpression tokens
+        with
+        | InterpreterException (line, where, message) -> Literal null
