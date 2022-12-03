@@ -171,3 +171,16 @@ type ScannerTests() =
     member this.ScanUnterminatedString() =
         let source = "var string = \"asdf ;"
         getTokenTypes source |> ignore
+        
+    [<TestMethod>]
+    member this.ScanExpressionWithLineBreak() =
+        let source = "fun\n(5)"
+        let actual = getTokenTypesAndLexemes source
+        let expected =
+            [ (TokenType.Fun, "fun")
+              (TokenType.LeftParen, "")
+              (TokenType.Number, "5")
+              (TokenType.RightParen, "")
+              (TokenType.EOF, "")]
+        Assert.AreEqual(expected, actual)
+        

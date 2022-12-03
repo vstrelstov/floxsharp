@@ -6,7 +6,7 @@ open Floxsharp.Interpreter.Parsing
 open Microsoft.VisualStudio.TestTools.UnitTesting
 
 [<TestClass>]
-type ParserTests () =
+type PrettyPrinterTests () =
 
     [<TestMethod>]
     member this.PrettyPrintSimpleExpression () =

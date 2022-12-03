@@ -31,7 +31,7 @@ module Scanner =
               ("true", TokenType.True)
               ("var", TokenType.Var)
               ("while", TokenType.While) ]
-
+    
     let private getLexeme src skipFunction =
         src
         |> List.takeWhile skipFunction
@@ -71,7 +71,7 @@ module Scanner =
                 createLexemedToken TokenType.String lexeme
 
             let createNumberToken =
-                let skipFunc = fun c -> Char.IsDigit c
+                let skipFunc = Char.IsDigit
                 let integer = getLexeme source skipFunc
 
                 let afterSkip =
@@ -86,8 +86,7 @@ module Scanner =
                     createLexemedToken TokenType.Number $"{integer}.{fractional}"
 
             let createIdentifierToken =
-                let skipFunc =
-                    fun c -> Char.IsLetterOrDigit c
+                let skipFunc = Char.IsLetterOrDigit
 
                 let lexeme = getLexeme source skipFunc
 
@@ -133,7 +132,7 @@ module Scanner =
                 else
                     tryTail newSource
 
-            match source with // TODO: Looks messed up and requires refactoring
+            match source with
             | [] -> tokens
             | head :: tail when Array.contains head ignoredSymbols -> loop tail tokens
             | '\n' :: tail ->
