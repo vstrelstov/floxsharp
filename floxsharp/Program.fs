@@ -5,8 +5,7 @@ open Floxsharp.Interpreter
 
 let run (source: string) =
     Scanner.scanTokens source
-    |> List.toArray
-    |> Parser.parse 
+    |> List.toArray 
     |> ignore
 
 let runFile (filePath: string) =
