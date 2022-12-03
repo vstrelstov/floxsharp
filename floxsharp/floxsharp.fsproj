@@ -14,7 +14,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="Scanner.fs" />
     <Compile Include="ParserTypes.fs" />
-    <Compile Include="Parser.fs" />
+    <Compile Include="PrettyPrinter.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

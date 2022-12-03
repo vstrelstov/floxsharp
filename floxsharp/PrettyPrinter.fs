@@ -2,11 +2,10 @@
 
 open System
 open System.Globalization
-open Floxsharp.Common
 open Floxsharp.Interpreter.Scanning
 open Floxsharp.Interpreter.Parsing
 
-module Parser =
+module PrettyPrinter =
 
     [<Obsolete("This function was used for testing purposes")>]
     let prettyPrint expression = 
