@@ -15,7 +15,7 @@ module Common =
 
     exception InterpreterException of int * string * string
 
-    let report line where message = Console.WriteLine($"[line {line}] Error: {message}")
+    let report line where message = Console.WriteLine($"[line {line}] \n Error: {message} \n Where: {where}")
         
     let reportTokenError token message =
         match token.Type with

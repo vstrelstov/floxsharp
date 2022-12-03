@@ -16,7 +16,7 @@ type ParserTests () =
         Assert.AreEqual(expected, actual)
 
     [<TestMethod>]
-    member this.PrettyPrintExrpression () =
+    member this.PrettyPrintExpression () =
         let sampleExpression = 
             Binary (Unary ({ Type = TokenType.Minus; Lexeme = "-"; Line = 1; }, Literal 123),
                 { Type = TokenType.Star; Lexeme = "*"; Line = 1},

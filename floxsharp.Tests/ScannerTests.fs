@@ -161,7 +161,7 @@ type ScannerTests() =
         Assert.AreEqual(expected, actual)
 
     [<TestMethod>]
-    [<ExpectedException(typeof<Common.InterpreterException>)>]
+    [<ExpectedException(typeof<InterpreterException>)>]
     member this.ScanUnexpectedSymbol() =
         let source = "var a = &&&"
         getTokenTypes source |> ignore

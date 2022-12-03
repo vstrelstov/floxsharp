@@ -50,5 +50,4 @@ module ScanerTypes =
             Lexeme: string;
             Line: int;
         }
-
-    
+        
